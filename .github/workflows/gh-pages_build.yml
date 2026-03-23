@@ -1,0 +1,44 @@
+name: Doom Wasm PWA Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: multi_select_doom
+
+      - name: Install Emscripten and dependencies and Build Doom
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake python3-pip libssl-dev
+          sudo pip3 install conan
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+          source ./emsdk_env.sh
+          sudo apt install automake libsdl2-dev libsdl2-mixer-dev libsdl2-net-dev -y
+          /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/scripts/build.sh
+          mkdir /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/src/deployment/
+          mkdir /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/src/deployment/src
+          cp /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/src/serviceWorker.js /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/src/deployment/src
+          cp /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/src/index.html /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/src/deployment/src
+          cp -r /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/src/static /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/src/deployment/src
+          cp -r /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/src/websockets-doom.* /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/src/deployment/src
+          cp /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/src/default.cfg /home/runner/work/doom-wasm-pwa/doom-wasm-pwa/src/deployment/src
+
+
+      - name: Deploy GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: src/deployment
+          token: ${{ secrets.GITHUB_TOKEN }}
